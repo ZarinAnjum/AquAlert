@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - AquAlert</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Login to AquAlert</h3>
+                    </div>
+                    <div class="card-body">
+                        <div id="login-error" class="alert alert-danger d-none" role="alert"></div>
+                        <form id="login-form" novalidate>
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email address</label>
+                                <input type="email" class="form-control" id="email" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="password" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">Login</button>
+                        </form>
+                    </div>
+                    <div class="card-footer text-center">
+                        <p class="mb-0">Don't have an account? <a href="register.html">Register here</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const loginForm = document.getElementById('login-form');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const loginError = document.getElementById('login-error');
+
+        loginForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            // Hide previous errors
+            loginError.classList.add('d-none');
+
+            const enteredEmail = emailInput.value;
+            const enteredPassword = passwordInput.value;
+
+            // Retrieve user data from localStorage
+            const storedUserJSON = localStorage.getItem('aqualertUser');
+
+            if (!storedUserJSON) {
+                showError('Invalid email or password.');
+                return;
+            }
+
+            const storedUser = JSON.parse(storedUserJSON);
+            
+            // Decode the stored password
+            let decodedPassword;
+            try {
+                decodedPassword = atob(storedUser.password);
+            } catch (e) {
+                console.error('Error decoding password:', e);
+                showError('An error occurred during login. Please try again.');
+                return;
+            }
+
+            // Check if credentials match
+            if (enteredEmail === storedUser.email && enteredPassword === decodedPassword) {
+                // Redirect to dashboard on success
+                window.location.href = 'dashboard.html';
+            } else {
+                // Show error on failure
+                showError('Invalid email or password.');
+            }
+        });
+
+        function showError(message) {
+            loginError.textContent = message;
+            loginError.classList.remove('d-none');
+        }
+    </script>
+
+</body>
+</html>

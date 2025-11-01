@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AquAlert Dashboard</title>
+    <!-- Bootstrap CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+        }
+        .status-card {
+            transition: all 0.3s ease-in-out;
+        }
+        .status-SAFE {
+            background-color: #d1e7dd;
+            border-left: 5px solid #0f5132;
+        }
+        .status-WARNING {
+            background-color: #fff3cd;
+            border-left: 5px solid #ffc107;
+        }
+        .status-DANGER {
+            background-color: #f8d7da;
+            border-left: 5px solid #dc3545;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <script>
+        // Authentication check on page load
+        if (!localStorage.getItem('aqualertUser')) {
+            window.location.href = 'login.html';
+        }
+    </script>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#"><i class="bi bi-droplet-fill"></i> AquAlert</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="btn btn-outline-light" href="login.html">Logout</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Sensor Inputs -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Manual Sensor Readings</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md">
+                        <label for="ph_input" class="form-label">pH Level</label>
+                        <input type="number" class="form-control" id="ph_input" value="7.5" step="0.1">
+                    </div>
+                    <div class="col-md">
+                        <label for="iron_input" class="form-label">Iron (mg/L)</label>
+                        <input type="number" class="form-control" id="iron_input" value="0.1" step="0.1">
+                    </div>
+                    <div class="col-md">
+                        <label for="bacteria_input" class="form-label">Bacteria (CFU/100ml)</label>
+                        <input type="number" class="form-control" id="bacteria_input" value="0" step="1">
+                    </div>
+                    <div class="col-md-auto">
+                        <button id="check_quality_btn" class="btn btn-primary w-100">Check Water Quality</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status & Analysis -->
+        <div id="analysis_results_area" class="d-none">
+            <div class="row">
+                <div class="col-lg-4 mb-4">
+                    <div id="status_card" class="card status-card h-100">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">Overall Status</h5>
+                            <div id="loader" class="loader d-none"></div>
+                            <h2 id="overall_status_text" class="display-4 fw-bold"></h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-8 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h5 class="mb-0">Detailed Analysis</h5>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Parameter</th>
+                                        <th>Value</th>
+                                        <th>Status</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="analysis_table_body">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alerts -->
+        <div id="warning_alert" class="alert alert-warning d-none" role="alert">
+            <h4 class="alert-heading">Action Recommended</h4>
+            <p>One or more parameters are outside the optimal range. Please review the action plan below.</p>
+            <hr>
+            <div id="warning_action_plan"></div>
+        </div>
+
+        <div id="service_alert" class="alert alert-danger d-none" role="alert">
+            <h4 class="alert-heading">Service Required!</h4>
+            <p>One or more parameters are at dangerous levels. Immediate action is required.</p>
+            <hr>
+            <div id="danger_action_plan"></div>
+            <button id="generate_report_btn" class="btn btn-danger mt-3">Generate Formal Report</button>
+        </div>
+
+    </div>
+
+    <!-- Report Modal -->
+    <div class="modal fade" id="reportModal" tabindex="-1" aria-labelledby="reportModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="reportModalLabel">Generated Formal Report</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="emailSubject" class="form-label">Email Subject</label>
+                        <input type="text" class="form-control" id="emailSubject" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="emailBody" class="form-label">Email Body</label>
+                        <textarea class="form-control" id="emailBody" rows="15" readonly></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="copy_report_btn">Copy to Clipboard</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        const apiKey = ""; // IMPORTANT: This key is intentionally left blank.
+        const geminiModel = "gemini-1.5-flash-preview-0514";
+
+        const phInput = document.getElementById('ph_input');
+        const ironInput = document.getElementById('iron_input');
+        const bacteriaInput = document.getElementById('bacteria_input');
+        const checkQualityBtn = document.getElementById('check_quality_btn');
+        
+        const analysisResultsArea = document.getElementById('analysis_results_area');
+        const loader = document.getElementById('loader');
+        const statusCard = document.getElementById('status_card');
+        const overallStatusText = document.getElementById('overall_status_text');
+        const analysisTableBody = document.getElementById('analysis_table_body');
+
+        const warningAlert = document.getElementById('warning_alert');
+        const serviceAlert = document.getElementById('service_alert');
+        const warningActionPlan = document.getElementById('warning_action_plan');
+        const dangerActionPlan = document.getElementById('danger_action_plan');
+        
+        const generateReportBtn = document.getElementById('generate_report_btn');
+        const reportModal = new bootstrap.Modal(document.getElementById('reportModal'));
+        const emailSubject = document.getElementById('emailSubject');
+        const emailBody = document.getElementById('emailBody');
+        const copyReportBtn = document.getElementById('copy_report_btn');
+
+        let lastAnalysisData = null;
+
+        // Debounce utility for API calls
+        async function exponentialBackoffFetch(url, options, maxRetries = 5, initialDelay = 1000) {
+            let delay = initialDelay;
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (response.status === 429 || response.status >= 500) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response;
+                } catch (error) {
+                    if (i === maxRetries - 1) throw error;
+                    console.warn(`Request failed, retrying in ${delay}ms...`, error);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    delay *= 2;
+                }
+            }
+        }
+
+        async function fetchGeminiAnalysis() {
+            if (!apiKey) {
+                alert("API Key is not set. Please edit the script and add your Gemini API key.");
+                return;
+            }
+
+            // Show loader and reset UI
+            loader.classList.remove('d-none');
+            overallStatusText.textContent = '';
+            analysisResultsArea.classList.remove('d-none');
+            statusCard.className = 'card status-card h-100';
+            warningAlert.classList.add('d-none');
+            serviceAlert.classList.add('d-none');
+            analysisTableBody.innerHTML = '';
+
+            const sensorReadings = {
+                ph: phInput.value,
+                iron: ironInput.value,
+                bacteria: bacteriaInput.value
+            };
+
+            const prompt = `
+                Analyze the following water quality data and determine the status for each parameter and an overall status.
+
+                Data:
+                - pH: ${sensorReadings.ph}
+                - Iron: ${sensorReadings.iron} mg/L
+                - Bacteria: ${sensorReadings.bacteria} CFU/100ml
+
+                Use the following strict criteria for your analysis:
+                - pH:
+                  - GOOD: 6.5 to 8.5 (inclusive)
+                  - MID: 6.0 to 6.4 or 8.6 to 9.0
+                  - SERVICE NEEDED: Below 6.0 or above 9.0
+                - Iron:
+                  - GOOD: Below 0.3 mg/L
+                  - MID: 0.3 to 0.6 mg/L (inclusive)
+                  - SERVICE NEEDED: Above 0.6 mg/L
+                - Bacteria:
+                  - GOOD: 0 CFU/100ml
+                  - SERVICE NEEDED: 1 or more CFU/100ml
+
+                Derive the overall status based on these rules:
+                - DANGER: If any single parameter is 'SERVICE NEEDED'.
+                - WARNING: If any parameter is 'MID' and no parameters are 'SERVICE NEEDED'.
+                - SAFE: If all parameters are 'GOOD'.
+
+                For each parameter, provide a brief, one-sentence description of the reading's meaning.
+            `;
+
+            const generationConfig = {
+                "response_mime_type": "application/json",
+                "response_schema": {
+                    "type": "OBJECT",
+                    "properties": {
+                        "overall_status": { "type": "STRING", "description": "SAFE, WARNING, or DANGER." },
+                        "analysis": {
+                            "type": "ARRAY",
+                            "items": {
+                                "type": "OBJECT",
+                                "properties": {
+                                    "parameter": { "type": "STRING" },
+                                    "value": { "type": "STRING" },
+                                    "status": { "type": "STRING", "description": "GOOD, MID, or SERVICE NEEDED." },
+                                    "description": { "type": "STRING" }
+                                },
+                                "required": ["parameter", "value", "status", "description"]
+                            }
+                        }
+                    },
+                    "required": ["overall_status", "analysis"]
+                }
+            };
+
+            try {
+                const response = await exponentialBackoffFetch(`https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }],
+                        generationConfig
+                    })
+                });
+
+                const data = await response.json();
+                const responseData = JSON.parse(data.candidates[0].content.parts[0].text);
+                lastAnalysisData = responseData;
+                updateUIWithAnalysis(responseData);
+
+            } catch (error) {
+                console.error('Error fetching Gemini analysis:', error);
+                overallStatusText.textContent = 'Error';
+                statusCard.classList.add('status-DANGER');
+            } finally {
+                loader.classList.add('d-none');
+            }
+        }
+
+        function updateUIWithAnalysis(data) {
+            // Overall Status
+            overallStatusText.textContent = data.overall_status;
+            statusCard.classList.add(`status-${data.overall_status}`);
+
+            // Analysis Table
+            analysisTableBody.innerHTML = '';
+            data.analysis.forEach(item => {
+                const row = `<tr>
+                    <td><strong>${item.parameter}</strong></td>
+                    <td>${item.value}</td>
+                    <td><span class="badge bg-${item.status === 'GOOD' ? 'success' : item.status === 'MID' ? 'warning' : 'danger'}">${item.status}</span></td>
+                    <td>${item.description}</td>
+                </tr>`;
+                analysisTableBody.innerHTML += row;
+            });
+
+            // Show alerts and action plans
+            if (data.overall_status === 'WARNING') {
+                warningAlert.classList.remove('d-none');
+                handleActionPlan(data, 'warning');
+            } else if (data.overall_status === 'DANGER') {
+                serviceAlert.classList.remove('d-none');
+                handleActionPlan(data, 'danger');
+            }
+        }
+
+        async function handleActionPlan(analysisData, severity) {
+            const targetDiv = severity === 'warning' ? warningActionPlan : dangerActionPlan;
+            targetDiv.innerHTML = '<div class="loader" style="width:20px; height:20px; margin: 0;"></div>';
+
+            const prompt = `
+                Based on the following water quality analysis, generate a simple, 3-step action plan for a resident.
+                The overall status is ${analysisData.overall_status}.
+                Details: ${JSON.stringify(analysisData.analysis, null, 2)}
+                The tone should be clear and direct. Format the output as a bulleted list (using markdown).
+            `;
+
+            try {
+                const response = await exponentialBackoffFetch(`https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                const data = await response.json();
+                const planText = data.candidates[0].content.parts[0].text;
+                // Basic markdown to HTML
+                const planHtml = '<ul>' + planText.split('* ').slice(1).map(item => `<li>${item.trim()}</li>`).join('') + '</ul>';
+                targetDiv.innerHTML = planHtml;
+            } catch (error) {
+                console.error('Error fetching action plan:', error);
+                targetDiv.innerHTML = '<p class="text-danger">Could not generate an action plan.</p>';
+            }
+        }
+
+        async function handleGenerateReport() {
+            if (!lastAnalysisData) return;
+            
+            const serviceNeededParams = lastAnalysisData.analysis.filter(p => p.status === 'SERVICE NEEDED');
+            if (serviceNeededParams.length === 0) return;
+
+            const details = serviceNeededParams.map(p => `- ${p.parameter}: ${p.value} (${p.description})`).join('\n');
+
+            const prompt = `
+                Draft a professional and firm email to a water authority based on the following critical water quality readings.
+                The email must:
+                1. Have a clear and urgent subject line.
+                2. State the address of the issue (use placeholder "[Your Address]").
+                3. Detail the specific parameters that are in 'SERVICE NEEDED' status.
+                4. Request an immediate investigation and a formal response.
+                5. Be signed off by "A Concerned Resident".
+
+                Critical Data:
+                ${details}
+
+                Return ONLY a JSON object with two keys: "subject" and "body".
+            `;
+            
+            try {
+                const response = await exponentialBackoffFetch(`https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }],
+                        generationConfig: { "response_mime_type": "application/json" }
+                    })
+                });
+
+                const data = await response.json();
+                const reportJsonText = data.candidates[0].content.parts[0].text;
+                const report = JSON.parse(reportJsonText);
+                
+                emailSubject.value = report.subject;
+                emailBody.value = report.body;
+                reportModal.show();
+
+            } catch (error) {
+                console.error('Error generating report:', error);
+                alert('Failed to generate the report.');
+            }
+        }
+
+        function copyReportToClipboard() {
+            const fullEmail = `Subject: ${emailSubject.value}\n\n${emailBody.value}`;
+            navigator.clipboard.writeText(fullEmail).then(() => {
+                const originalText = copyReportBtn.textContent;
+                copyReportBtn.textContent = 'Copied!';
+                setTimeout(() => {
+                    copyReportBtn.textContent = originalText;
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+            });
+        }
+
+        checkQualityBtn.addEventListener('click', fetchGeminiAnalysis);
+        generateReportBtn.addEventListener('click', handleGenerateReport);
+        copyReportBtn.addEventListener('click', copyReportToClipboard);
+
+    </script>
+</body>
+</html>
