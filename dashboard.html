@@ -94,9 +94,9 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav mx-auto">
-                    <li class="nav-item"><a class="nav-link" href="#">Home</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#">History</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#">Settings</a></li>
+                    <li class="nav-item"><a class="nav-link" href="dashboard.html">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="history.html">History</a></li>
+                    <li class="nav-item"><a class="nav-link" href="settings.html">Settings</a></li>
                 </ul>
                 <ul class="navbar-nav">
                     <li class="nav-item">
@@ -230,178 +230,189 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+        
+        <script>
+            const phInput = document.getElementById('ph_input');
+            const ironInput = document.getElementById('iron_input');
+            const bacteriaInput = document.getElementById('bacteria_input');
+            const checkQualityBtn = document.getElementById('check_quality_btn');
+            
+            const analysisResultsArea = document.getElementById('analysis_results_area');
+            const loader = document.getElementById('loader');
+            const statusCard = document.getElementById('status_card');
+            const overallStatusText = document.getElementById('overall_status_text');
+            const analysisTableBody = document.getElementById('analysis_table_body');
     
-    <script>
-        const phInput = document.getElementById('ph_input');
-        const ironInput = document.getElementById('iron_input');
-        const bacteriaInput = document.getElementById('bacteria_input');
-        const checkQualityBtn = document.getElementById('check_quality_btn');
-        
-        const analysisResultsArea = document.getElementById('analysis_results_area');
-        const loader = document.getElementById('loader');
-        const statusCard = document.getElementById('status_card');
-        const overallStatusText = document.getElementById('overall_status_text');
-        const analysisTableBody = document.getElementById('analysis_table_body');
-
-        const warningAlert = document.getElementById('warning_alert');
-        const serviceAlert = document.getElementById('service_alert');
-        const warningActionPlan = document.getElementById('warning_action_plan');
-        const dangerActionPlan = document.getElementById('danger_action_plan');
-        
-        const generateReportBtn = document.getElementById('generate_report_btn');
-        const reportModal = new bootstrap.Modal(document.getElementById('reportModal'));
-        const emailSubject = document.getElementById('emailSubject');
-        const emailBody = document.getElementById('emailBody');
-        const copyReportBtn = document.getElementById('copy_report_btn');
-
-        let lastAnalysisData = null;
-
-        async function fetchGeminiAnalysis() {
-            // Show loader and reset UI
-            loader.classList.remove('d-none');
-            overallStatusText.textContent = '';
-            analysisResultsArea.classList.remove('d-none');
-            statusCard.className = 'card status-card h-100';
-            warningAlert.classList.add('d-none');
-            serviceAlert.classList.add('d-none');
-            analysisTableBody.innerHTML = '';
-
-            const sensorReadings = {
-                ph: parseFloat(phInput.value),
-                iron: parseFloat(ironInput.value),
-                bacteria: parseInt(bacteriaInput.value)
-            };
-
-            // Simulate API call delay
-            setTimeout(() => {
-                const mockAnalysis = getMockAnalysis(sensorReadings);
-                lastAnalysisData = mockAnalysis;
-                updateUIWithAnalysis(mockAnalysis);
-                loader.classList.add('d-none');
-            }, 1000);
-        }
-
-        function getMockAnalysis(readings) {
-            let overall_status = 'SAFE';
-            const analysis = [];
-
-            // pH analysis
-            let ph_status = 'GOOD';
-            let ph_description = 'pH level is ideal for drinking water.';
-            if (readings.ph < 6.5 || readings.ph > 8.5) {
-                ph_status = 'MID';
-                ph_description = 'pH level is slightly acidic or alkaline.';
-                overall_status = 'WARNING';
-            }
-            if (readings.ph < 6.0 || readings.ph > 9.0) {
-                ph_status = 'SERVICE NEEDED';
-                ph_description = 'pH level is dangerously acidic or alkaline.';
-                overall_status = 'DANGER';
-            }
-            analysis.push({ parameter: 'pH', value: readings.ph, status: ph_status, description: ph_description });
-
-            // Iron analysis
-            let iron_status = 'GOOD';
-            let iron_description = 'Iron level is within the acceptable range.';
-            if (readings.iron >= 0.3 && readings.iron <= 0.6) {
-                iron_status = 'MID';
-                iron_description = 'Iron level is elevated, may cause metallic taste.';
-                if (overall_status !== 'DANGER') overall_status = 'WARNING';
-            }
-            if (readings.iron > 0.6) {
-                iron_status = 'SERVICE NEEDED';
-                iron_description = 'Iron level is too high, indicating potential contamination.';
-                overall_status = 'DANGER';
-            }
-            analysis.push({ parameter: 'Iron', value: `${readings.iron} mg/L`, status: iron_status, description: iron_description });
-
-            // Bacteria analysis
-            let bacteria_status = 'GOOD';
-            let bacteria_description = 'No harmful bacteria detected.';
-            if (readings.bacteria > 0) {
-                bacteria_status = 'SERVICE NEEDED';
-                bacteria_description = 'Harmful bacteria detected, water is unsafe to drink.';
-                overall_status = 'DANGER';
-            }
-            analysis.push({ parameter: 'Bacteria', value: `${readings.bacteria} CFU/100ml`, status: bacteria_status, description: bacteria_description });
-
-            return {
-                overall_status,
-                analysis
-            };
-        }
-
-        function updateUIWithAnalysis(data) {
-            // Overall Status
-            overallStatusText.textContent = data.overall_status;
-            statusCard.classList.add(`status-${data.overall_status}`);
-
-            // Analysis Table
-            analysisTableBody.innerHTML = '';
-            data.analysis.forEach(item => {
-                const row = `<tr>
-                    <td><strong>${item.parameter}</strong></td>
-                    <td>${item.value}</td>
-                    <td><span class="badge bg-${item.status === 'GOOD' ? 'success' : item.status === 'MID' ? 'warning' : 'danger'}">${item.status}</span></td>
-                    <td>${item.description}</td>
-                </tr>`;
-                analysisTableBody.innerHTML += row;
-            });
-
-            // Show alerts and action plans
-            if (data.overall_status === 'WARNING') {
-                warningAlert.classList.remove('d-none');
-                warningActionPlan.innerHTML = '<ul><li>Consider using a water filter.</li><li>Boil water before drinking if you have health concerns.</li><li>Schedule a professional water test for a more detailed analysis.</li></ul>';
-            } else if (data.overall_status === 'DANGER') {
-                serviceAlert.classList.remove('d-none');
-                dangerActionPlan.innerHTML = '<ul><li>Do not drink the water.</li><li>Contact your local water authority immediately.</li><li>Use bottled water for drinking and cooking until the issue is resolved.</li></ul>';
-            }
-        }
-
-        async function handleGenerateReport() {
-            if (!lastAnalysisData) return;
+            const warningAlert = document.getElementById('warning_alert');
+            const serviceAlert = document.getElementById('service_alert');
+            const warningActionPlan = document.getElementById('warning_action_plan');
+            const dangerActionPlan = document.getElementById('danger_action_plan');
             
-            const serviceNeededParams = lastAnalysisData.analysis.filter(p => p.status === 'SERVICE NEEDED');
-            if (serviceNeededParams.length === 0) return;
-
-            const details = serviceNeededParams.map(p => `- ${p.parameter}: ${p.value} (${p.description})`).join('\n');
-
-            const subject = "Urgent Action Required: Unsafe Water Quality Detected";
-            const body = `To Whom It May Concern,
-
-This is a formal notification regarding a critical issue with the water quality at the following address: [Your Address].
-
-Recent tests have revealed that the following parameters are at dangerous levels:
-${details}
-
-These readings indicate that the water is not safe for consumption. I request an immediate investigation into this matter and a formal response outlining the steps you will take to resolve this issue.
-
-Sincerely,
-A Concerned Resident`;
-            
-            emailSubject.value = subject;
-            emailBody.value = body;
-            reportModal.show();
-        }
-
-        function copyReportToClipboard() {
-            const fullEmail = `Subject: ${emailSubject.value}\n\n${emailBody.value}`;
-            navigator.clipboard.writeText(fullEmail).then(() => {
-                const originalText = copyReportBtn.textContent;
-                copyReportBtn.textContent = 'Copied!';
+            const generateReportBtn = document.getElementById('generate_report_btn');
+            const reportModal = new bootstrap.Modal(document.getElementById('reportModal'));
+            const emailSubject = document.getElementById('emailSubject');
+            const emailBody = document.getElementById('emailBody');
+            const copyReportBtn = document.getElementById('copy_report_btn');
+    
+            let lastAnalysisData = null;
+    
+            async function fetchGeminiAnalysis() {
+                // Show loader and reset UI
+                loader.classList.remove('d-none');
+                overallStatusText.textContent = '';
+                analysisResultsArea.classList.remove('d-none');
+                statusCard.className = 'card status-card h-100';
+                warningAlert.classList.add('d-none');
+                serviceAlert.classList.add('d-none');
+                analysisTableBody.innerHTML = '';
+    
+                const sensorReadings = {
+                    ph: parseFloat(phInput.value),
+                    iron: parseFloat(ironInput.value),
+                    bacteria: parseInt(bacteriaInput.value)
+                };
+    
+                // Simulate API call delay
                 setTimeout(() => {
-                    copyReportBtn.textContent = originalText;
-                }, 2000);
-            }).catch(err => {
-                console.error('Failed to copy text: ', err);
-            });
-        }
-
-        checkQualityBtn.addEventListener('click', fetchGeminiAnalysis);
-        generateReportBtn.addEventListener('click', handleGenerateReport);
-        copyReportBtn.addEventListener('click', copyReportToClipboard);
-
-    </script>
-</body>
-</html>
+                    const mockAnalysis = getMockAnalysis(sensorReadings);
+                    lastAnalysisData = mockAnalysis;
+                    updateUIWithAnalysis(mockAnalysis);
+                    
+                    // Store analysis in history
+                    let history = JSON.parse(localStorage.getItem('aqualertHistory')) || [];
+                    history.push({ ...mockAnalysis, date: new Date().toISOString() });
+                    localStorage.setItem('aqualertHistory', JSON.stringify(history));
+    
+                    loader.classList.add('d-none');
+                }, 1000);
+            }
+    
+            function getMockAnalysis(readings) {
+                let overall_status = 'SAFE';
+                const analysis = [];
+    
+                // pH analysis
+                let ph_status = 'GOOD';
+                let ph_description = 'pH level is ideal for drinking water.';
+                if (readings.ph < 6.5 || readings.ph > 8.5) {
+                    ph_status = 'MID';
+                    ph_description = 'pH level is slightly acidic or alkaline.';
+                    overall_status = 'WARNING';
+                }
+                if (readings.ph < 6.0 || readings.ph > 9.0) {
+                    ph_status = 'SERVICE NEEDED';
+                    ph_description = 'pH level is dangerously acidic or alkaline.';
+                    overall_status = 'DANGER';
+                }
+                analysis.push({ parameter: 'pH', value: readings.ph, status: ph_status, description: ph_description });
+    
+                // Iron analysis
+                let iron_status = 'GOOD';
+                let iron_description = 'Iron level is within the acceptable range.';
+                if (readings.iron >= 0.3 && readings.iron <= 0.6) {
+                    iron_status = 'MID';
+                    iron_description = 'Iron level is elevated, may cause metallic taste.';
+                    if (overall_status !== 'DANGER') overall_status = 'WARNING';
+                }
+                if (readings.iron > 0.6) {
+                    iron_status = 'SERVICE NEEDED';
+                    iron_description = 'Iron level is too high, indicating potential contamination.';
+                    overall_status = 'DANGER';
+                }
+                analysis.push({ parameter: 'Iron', value: `${readings.iron} mg/L`, status: iron_status, description: iron_description });
+    
+                // Bacteria analysis
+                let bacteria_status = 'GOOD';
+                let bacteria_description = 'No harmful bacteria detected.';
+                if (readings.bacteria > 0) {
+                    bacteria_status = 'SERVICE NEEDED';
+                    bacteria_description = 'Harmful bacteria detected, water is unsafe to drink.';
+                    overall_status = 'DANGER';
+                }
+                analysis.push({ parameter: 'Bacteria', value: `${readings.bacteria} CFU/100ml`, status: bacteria_status, description: bacteria_description });
+    
+                return {
+                    overall_status,
+                    analysis
+                };
+            }
+    
+            function updateUIWithAnalysis(data) {
+                // Overall Status
+                overallStatusText.textContent = data.overall_status;
+                statusCard.classList.add(`status-${data.overall_status}`);
+    
+                // Analysis Table
+                analysisTableBody.innerHTML = '';
+                data.analysis.forEach(item => {
+                    const row = `<tr>
+                        <td><strong>${item.parameter}</strong></td>
+                        <td>${item.value}</td>
+                        <td><span class="badge bg-${item.status === 'GOOD' ? 'success' : item.status === 'MID' ? 'warning' : 'danger'}">${item.status}</span></td>
+                        <td>${item.description}</td>
+                    </tr>`;
+                    analysisTableBody.innerHTML += row;
+                });
+    
+                // Show alerts and action plans
+                if (data.overall_status === 'WARNING') {
+                    warningAlert.classList.remove('d-none');
+                    warningActionPlan.innerHTML = '<ul><li>Consider using a water filter.</li><li>Boil water before drinking if you have health concerns.</li><li>Schedule a professional water test for a more detailed analysis.</li></ul>';
+                } else if (data.overall_status === 'DANGER') {
+                    serviceAlert.classList.remove('d-none');
+                    dangerActionPlan.innerHTML = '<ul><li>Do not drink the water.</li><li>Contact your local water authority immediately.</li><li>Use bottled water for drinking and cooking until the issue is resolved.</li></ul>';
+                }
+            }
+    
+            async function handleGenerateReport() {
+                if (!lastAnalysisData) return;
+                
+                const serviceNeededParams = lastAnalysisData.analysis.filter(p => p.status === 'SERVICE NEEDED');
+                if (serviceNeededParams.length === 0) return;
+    
+                const details = serviceNeededParams.map(p => `- ${p.parameter}: ${p.value} (${p.description})`).join('\n');
+    
+                const subject = "Urgent Action Required: Unsafe Water Quality Detected";
+                const body = `To Whom It May Concern,
+    
+    This is a formal notification regarding a critical issue with the water quality at the following address: [Your Address].
+    
+    Recent tests have revealed that the following parameters are at dangerous levels:
+    ${details}
+    
+    These readings indicate that the water is not safe for consumption. I request an immediate investigation into this matter and a formal response outlining the steps you will take to resolve this issue.
+    
+    Sincerely,
+    A Concerned Resident`;
+                
+                emailSubject.value = subject;
+                emailBody.value = body;
+                reportModal.show();
+            }
+    
+            function copyReportToClipboard() {
+                const fullEmail = `Subject: ${emailSubject.value}\n\n${emailBody.value}`;
+                navigator.clipboard.writeText(fullEmail).then(() => {
+                    const originalText = copyReportBtn.textContent;
+                    copyReportBtn.textContent = 'Copied!';
+                    setTimeout(() => {
+                        copyReportBtn.textContent = originalText;
+                    }, 2000);
+                }).catch(err => {
+                    console.error('Failed to copy text: ', err);
+                });
+            }
+    
+            checkQualityBtn.addEventListener('click', fetchGeminiAnalysis);
+            generateReportBtn.addEventListener('click', handleGenerateReport);
+            copyReportBtn.addEventListener('click', copyReportToClipboard);
+    
+        </script>
+    
+        <footer class="text-center mt-5 pb-3">
+            <p>Contact us: <a href="mailto:promiseitsnotfake@gmail.com">promiseitsnotfake@gmail.com</a></p>
+            <p>&copy; All rights reserved by The Maevricks</p>
+        </footer>
+    
+    </body>
