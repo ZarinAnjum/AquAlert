@@ -139,10 +139,23 @@
             }
 
             if (isValid) {
+                const bangladeshiAddresses = [
+                    "123, Kazi Nazrul Islam Ave, Dhaka 1215",
+                    "456, Agrabad C/A, Chattogram 4000",
+                    "789, Zindabazar, Sylhet 3100",
+                    "101, Sonadanga R/A, Khulna 9000",
+                    "202, Rajshahi University Rd, Rajshahi 6205",
+                    "303, Mymensingh Sadar, Mymensingh 2200",
+                    "404, Barisal Sadar, Barisal 8200",
+                    "505, Rangpur Sadar, Rangpur 5400"
+                ];
+                const randomAddress = bangladeshiAddresses[Math.floor(Math.random() * bangladeshiAddresses.length)];
+
                 const userCredentials = {
                     name: nameInput.value,
                     email: emailInput.value,
                     phone: phoneInput.value,
+                    address: randomAddress,
                     // Encode password for demonstration purposes
                     password: btoa(passwordInput.value)
                 };
