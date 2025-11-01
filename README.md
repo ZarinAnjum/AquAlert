@@ -13,7 +13,13 @@ AquAlert is a web-based water quality monitoring dashboard designed to provide u
 To run this application locally, simply download or clone the repository and open the `login.html` file in your web browser. Due to the use of `localStorage` for user data and analysis history, it's recommended to open these files from a local web server (e.g., using Live Server VS Code extension) to avoid potential browser security restrictions for local file access.
 
 ## Features
-Real time Mocking analyse ,replicating the AI analyse Feature. Due to security purpose the Api calling AI analyse is not attached.
+Real time Mocking analyse ,replicating the AI analyse Feature. Due to security purpose the Api calling AI analyse is not attached.  
+
+- **User Authentication:** Secure registration and login using `localStorage`. 
+ - **Real-time Analysis (Mocked):** Simulate water quality analysis with immediate feedback. 
+ - **Personalized Settings:** View your registered account details. 
+ - **Analysis History:** Keep track of all your past water quality reports. 
+ - **Report Generation:** Generate formal reports for critical water conditions.
 
 ## Pages
 
